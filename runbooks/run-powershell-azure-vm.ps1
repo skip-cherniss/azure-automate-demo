@@ -1,6 +1,4 @@
-﻿
-
-<#
+﻿<#
     .AUTHOR
     Skip Cherniss
 
@@ -12,10 +10,12 @@
 
     .PARAMETER resourceGroupName
     Specifies the resourceGroupName for the virtual machine
-    
-    
+        
     .PARAMETER vmName
     Specifies the virtual machine name to download the file on
+        
+    .PARAMETER newfilename
+    Specifies the file name to use when saving the download to the desktop
         
     .INPUTS
     None. You cannot pipe objects to this runbook
@@ -59,23 +59,27 @@
 
         function download-file {
     
-        Param(	        
-            [parameter(ParameterSetName = 'saveFileName',Mandatory=$true)]
-	        [string]$saveFileName
+        Param(
+            [parameter(Mandatory=$true)]
+            [string]$saveFileName
 	    )
     
-            $file = "https://raw.githubusercontent.com/skip-cherniss/azure-automate-demo/main/runbooks/runbook-template.ps1"
-            $fileDestination = Join-Path -Path $([Environment]::GetFolderPath("Desktop")) -ChildPath $saveFileName
 
             try
             {
+                Write-Output "Starting the thing..."
+                
+                $file = "https://raw.githubusercontent.com/skip-cherniss/azure-automate-demo/main/runbooks/runbook-template.ps1"
+                #$saveFileName = "test.txt"
+                #$fileDestination = Join-Path -Path $([Environment]::GetFolderPath("Desktop")) -ChildPath $saveFileName
+                $fileDestination = Join-Path -Path "c:\users\demouser\desktop" -ChildPath $saveFileName
                 Invoke-WebRequest -Uri $file -OutFile $fileDestination -ErrorAction Stop -Verbose
 
-                Write-Output "File dowloaded to vm desktop"
+                Write-Output "File downloaded to vm desktop"
             }
             catch
             {
-                Write-Output "ErrorMessage: " + $PSItem.ToString() = " at " + $PSItem.ScriptStackTrace
+                Write-Output "ErrorMessage: " + $PSItem.ToString() + " at " + $PSItem.ScriptStackTrace
             }
 
         }
@@ -87,9 +91,16 @@
         ### ///////////////////////////////////////////////////////////////////////////////////////////////
         ### *******  RUN THE SCRIPT ON THE VM
         ### ///////////////////////////////////////////////////////////////////////////////////////////////
+        $parms = @{saveFileName='"'+$newfilename+'"'}
 
-        $output = Invoke-AzVMRunCommand -Name $vmName -ResourceGroupName $resourceGroupName  -CommandId 'RunPowerShellScript' -ScriptPath test.ps1 -Parameter @{newFileName = $newfilename}
+        $output = Invoke-AzVMRunCommand `
+            -Name $vmName `
+            -ResourceGroupName $resourceGroupName `
+            -CommandId 'RunPowerShellScript' `
+            -ScriptPath test.ps1 `
+            -Parameter @{saveFileName="test.txt"}
 
+        Remove-Item -Path test.ps1
     }
     catch
     {
@@ -101,9 +112,15 @@
 
     $resultObject = New-Object -TypeName PSObject
     $resultObject | Add-Member -Name resourceGroupName -MemberType NoteProperty -Value $resourceGroupName     
-    $resultObject | Add-Member -Name resourceGroupName -MemberType NoteProperty -Value $vmName     
-    $resultObject | Add-Member -Name resourceGroupName -MemberType NoteProperty -Value $newfilename 
+    $resultObject | Add-Member -Name vmName -MemberType NoteProperty -Value $vmName     
+    $resultObject | Add-Member -Name newFileName -MemberType NoteProperty -Value $newfilename 
+    $resultObject | Add-Member -Name output -MemberType NoteProperty -Value $output.Value[0].message
 
-    $processResult.Result = $output
-
+    $processResult.Result = $resultObject
+    Write-Output $output.Value.Count
+    foreach($testobj in $output.Value)
+    {
+        Write-Output $testobj.message
+    }
+    
     Write-Output ( $processResult | ConvertTo-Json)
