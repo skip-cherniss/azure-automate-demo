@@ -40,6 +40,7 @@ https://docs.microsoft.com/en-us/powershell/module/az.managedserviceidentity/new
 $idname = "id-vstudio-powershell-demo"
 $resourceGroupName = 'rg-vstudio-powershell-demo' 
 $location = 'centralus' 
+
 New-AzUserAssignedIdentity -ResourceGroupName $resourceGroupName -Name $idname -Location $location
 
 
@@ -50,5 +51,12 @@ $id = Get-AzUserAssignedIdentity -ResourceGroupName $resourceGroupName -Name $id
 # Assign this managed identity to your azure automation and add a clientId variable with the clientId value from this
 Write-Host $id.ClientId
 
+### ///////////////////////////////////////////////////////////////////////////////////////////////
+### *******  GRANT MANAGED IDENTITY CONTRIBUTOR TO RESOURCE GROUP
+### ///////////////////////////////////////////////////////////////////////////////////////////////
+
+$rg = get-azresourcegroup -Name $resourceGroupName
+
+New-AzRoleAssignment -ObjectId $id.PrincipalId -RoleDefinitionName "Contributor" -Scope $rg.ResourceId
 
 
