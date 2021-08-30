@@ -91,14 +91,14 @@
         ### ///////////////////////////////////////////////////////////////////////////////////////////////
         ### *******  RUN THE SCRIPT ON THE VM
         ### ///////////////////////////////////////////////////////////////////////////////////////////////
-        $parms = @{saveFileName='"'+$newfilename+'"'}
+        $parms = @{saveFileName=$newfilename}
 
         $output = Invoke-AzVMRunCommand `
             -Name $vmName `
             -ResourceGroupName $resourceGroupName `
             -CommandId 'RunPowerShellScript' `
             -ScriptPath test.ps1 `
-            -Parameter @{saveFileName="test.txt"}
+            -Parameter $parms
 
         Remove-Item -Path test.ps1
     }
